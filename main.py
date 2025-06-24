@@ -1,3 +1,6 @@
+import io
+import os
+from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -7,6 +10,12 @@ import logging
 from database_manager import DatabaseManager
 from autoresponder import Autoresponder
 
+# Max Message length:
+MAX_DISCORD_MESSAGE_LENGTH = 2000
+
+load_dotenv()
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -126,9 +135,24 @@ async def listresponses(interaction: discord.Interaction, key: str):
         return
 
     formatted = "\n".join(f"`{row[0]}`: {row[1]}" for row in responses)
-    await interaction.response.send_message(
-        f"Responses for **{key}**:\n{formatted}", ephemeral=True
-    )
+    if len(formatted) <= MAX_DISCORD_MESSAGE_LENGTH:
+        # Send as a regular message if short enough
+        await interaction.response.send_message(
+            f"Responses for **{key}**:\n{formatted}", ephemeral=True
+        )
+    else:
+        # Send as a file if it's too long
+        logger.info(
+            f"Response has {len(formatted)} characters which is greater than 2000. Sending a file."
+        )
+        file = discord.File(
+            io.BytesIO(formatted.encode()), filename=f"{key}_responses.txt"
+        )
+        await interaction.response.send_message(
+            content=f"Responses for **{key}** (see attached):",
+            file=file,
+            ephemeral=True,
+        )
 
 
 # === Command: Add responses in bulk ===
@@ -211,6 +235,6 @@ async def on_message(message: discord.Message):
 
 
 # ---------- Run the Bot ----------
-with open("secret.txt") as f:
-    TOKEN = f.read().strip()
-bot.run(TOKEN)
+# with open("secret.txt") as f:
+#     TOKEN = f.read().strip()
+bot.run(BOT_TOKEN)
