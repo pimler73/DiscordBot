@@ -208,9 +208,7 @@ async def bulkadd(
             "Something went wrong while processing the file.", ephemeral=True
         )
 
-
 # ===== Bot Events =====
-
 
 @bot.event
 async def on_ready():
@@ -231,6 +229,10 @@ async def on_message(message: discord.Message):
         message.content
     )
     if response:
+        
+        logger.info(
+            f"Responding to user {message.author} with response `{response}`"
+        )
         await message.channel.send(response)
 
 
